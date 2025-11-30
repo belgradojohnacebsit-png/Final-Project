@@ -1,0 +1,101 @@
+package com.example.calculator
+
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import com.example.calculator.databinding.ActivityMainBinding
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+    private var lastNumeric = false
+    private var stateError = false
+    private var lastDot = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        setNumericListeners()
+        setOperatorListeners()
+    }
+
+    private fun setNumericListeners() {
+        val numericButtons = listOf(
+            binding.btn0, binding.btn1, binding.btn2, binding.btn3, binding.btn4,
+            binding.btn5, binding.btn6, binding.btn7, binding.btn8, binding.btn9
+        )
+
+        for (button in numericButtons) {
+            button.setOnClickListener {
+                if (stateError) {
+                    binding.tvDisplay.text = button.text
+                    stateError = false
+                } else {
+                    binding.tvDisplay.append(button.text)
+                }
+                lastNumeric = true
+            }
+        }
+
+        binding.btnDot.setOnClickListener {
+            if (lastNumeric && !lastDot) {
+                binding.tvDisplay.append(".")
+                lastNumeric = false
+                lastDot = true
+            }
+        }
+    }
+
+    private fun setOperatorListeners() {
+        val operatorButtons = listOf(
+            binding.btnPlus, binding.btnMinus, binding.btnMultiply, binding.btnDivide, binding.btnPercent
+        )
+
+        for (button in operatorButtons) {
+            button.setOnClickListener {
+                if (lastNumeric && !stateError) {
+                    binding.tvDisplay.append(button.text)
+                    lastNumeric = false
+                    lastDot = false
+                }
+            }
+        }
+
+        binding.btnClear.setOnClickListener {
+            binding.tvDisplay.text = ""
+            lastNumeric = false
+            lastDot = false
+            stateError = false
+        }
+
+        binding.btnDel.setOnClickListener {
+            val text = binding.tvDisplay.text.toString()
+            if (text.isNotEmpty()) {
+                binding.tvDisplay.text = text.dropLast(1)
+            }
+        }
+
+        binding.btnEquals.setOnClickListener {
+            if (lastNumeric && !stateError) {
+                val expression = binding.tvDisplay.text.toString()
+                try {
+                    val result = evaluate(expression)
+                    binding.tvDisplay.text = result
+                } catch (e: Exception) {
+                    binding.tvDisplay.text = "Error"
+                    stateError = true
+                }
+            }
+        }
+    }
+
+    private fun evaluate(expression: String): String {
+        return try {
+            val result = Expression(expression).calculate()
+            if (result.isNaN()) "Error" else result.toString()
+        } catch (e: Exception) {
+            "Error"
+        }
+    }
+}
